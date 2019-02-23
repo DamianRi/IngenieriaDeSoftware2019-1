@@ -1,0 +1,174 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="http://java.sun.com/jsf/facelets"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:f="http://xmlns.jcp.org/jsf/core">
+    <ui:composition template="/views/template.xhtml">
+        <ui:define name="head">
+            <title>Reservar Material</title>
+            <link rel="stylesheet" type="text/css" href="/css/reservarmaterial.css"></link>
+        </ui:define>
+        <ui:define name="body">
+            <div class="container">
+
+                <h:form onkeypress="if (event.keyCode == 13) {
+                            alert();
+                            return false;
+                        }" class="escogerMateriales prestar">
+                    <p:messages for="nuevo_prestamo" closable="true" showDetail="true"/>
+                    <p:messages for="prestamo_vacio" showDetail="true" closable="true"/>
+                    <p:growl for="mensaje-agregar-material" showDetail="true" />
+                    <p:growl for="mensaje-eliminar-material" showDetail="true" />
+                    <p:messages for="mensajes" closable="true" showDetail="true" class="mensaje-exterior mensaje"/>
+                    <p:growl for="mensajes" showDetail="true" class="mensaje-exterior mensaje" life="10000"/>
+
+                    <br/>
+                    <h2 style="background-color: #56282D; color: white; padding: 15px; margin: 0px;">Reservar Material</h2>
+                    <br/>
+                    <p:panel rendered="#{!(reservarMaterialController.estado and reservarMaterialController.listaPrestamoUnica.size()!=0)}" >
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" id="basic-addon1"><i class="fab fa-elementor"></i></span>
+                            </div>
+                            <p:inputText class="form-control"  placeholder="Nombre del material"  id="nombreMaterial" size="100"
+                                         value="${reservarMaterialController.nombreMaterial}">
+                                <p:ajax process="@this" event="keyup" update="dataMaterialList"></p:ajax>
+                            </p:inputText>
+                            <br/>
+                        </div><br/>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" id="basic-addon1"><i class="fab fa-elementor"></i></span>
+                            </div>
+                            <p:selectOneMenu id="categoria" class="form-control" value="#{reservarMaterialController.categoria}" converter="categoriaConverter"
+                                             var="categoria"  filter="true" filterMatchMode="contains">
+                                <f:selectItem itemLabel="Seleccione una categoria" itemValue="" />
+                                <f:selectItems value="#{reservarMaterialController.categorias}" var="categoria" itemLabel="#{categoria.nombre}" itemValue="#{categoria}" />
+                                <p:column>
+                                    <h:outputText value="#{categoria.nombre}" /><br/>
+                                </p:column> />
+                                <p:ajax process="@this" event="change" update="dataMaterialList"></p:ajax>
+                            </p:selectOneMenu>
+                        </div>
+                        <br/>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text" id="basic-addon1"><i class="fab fa-elementor"></i></span>
+                            </div>
+                            <p:selectOneMenu id="subcategoria" class="form-control" value="#{reservarMaterialController.subcategoria}" converter="subcategoriaConverter"
+                                             var="subcategoria"  filter="true" filterMatchMode="contains">
+                                <f:selectItem itemLabel="Seleccione una subcategoria" itemValue="" />
+                                <f:selectItems value="#{reservarMaterialController.subcategorias}" var="subcategoria" itemLabel="#{subcategoria.nombre}" itemValue="#{subcategoria}" />
+                                <p:column>
+                                    <h:outputText value="#{subcategoria.nombre}" /><br/>
+                                </p:column> />
+                                <p:ajax process="@this" event="change" update="dataMaterialList"></p:ajax>
+                            </p:selectOneMenu>
+                        </div>
+                        <br/>
+                    </p:panel>
+                    <!-- Estructura para la presentaciónde un material-->
+
+                    <p:commandButton class="btn btn-outline-success confirmarRes prestar"
+                                     value="#{reservarMaterialController.nombreBtnAccion} #{reservarMaterialController.listaPrestamo.size()}" 
+                                     icon="fa fa-arrow-circle-right"
+                                     disabled="#{reservarMaterialController.habilitarBoton() or reservarMaterialController.exito}"
+                                     update="@(.prestar)"
+                                     rendered="#{!reservarMaterialController.estado}"
+                                     actionListener="${reservarMaterialController.generarPrestamo()}"/>
+
+                    <p:commandButton class="btn btn-outline-success prestar continua-agregando"
+                                     value="#{reservarMaterialController.nombreBtnAccion} #{reservarMaterialController.listaPrestamo.size()}"
+                                     icon="fa fa-fw fa-arrow-circle-left"
+                                     disabled="#{reservarMaterialController.habilitarBoton() or reservarMaterialController.exito}"
+                                     update="@(.prestar)"
+                                     rendered="#{reservarMaterialController.estado}"
+                                     actionListener="${reservarMaterialController.generarPrestamo()}"/>
+
+                    <p:commandButton class="btn btn-outline-danger confirmar-prestamo"
+                                     value="CONFIRMAR PRÉSTAMO" icon="fa fa-check-square"
+                                     disabled="${reservarMaterialController.exito}"
+                                     update="@(.prestar)"
+                                     rendered="#{reservarMaterialController.estado and reservarMaterialController.listaPrestamoUnica.size()!=0}" 
+                                     action="${reservarMaterialController.crearPrestamo()}"/>
+
+                    <p:commandButton class="btn btn-outline-primary nuervo-prestamo"
+                                     value="Volver al Inicio" icon="fa fa-plus-square" 
+                                     update="@(.prestar)"
+                                     rendered="${reservarMaterialController.exito}"
+                                     actionListener="${reservarMaterialController.nuevoPrestamo()}"/>
+
+                    <p:dataList id="dataMaterialList" class="prestar" value="#{reservarMaterialController.materiales}" var="material" type="definition" 
+                                rendered="#{!reservarMaterialController.estado}" emptyMessage="No se encontraron materiales con esa búsqueda.">
+                        <h:panelGrid class="panelGrid" columns="4" cellpadding = "15" columnClasses="columna-imagen material-info btnAgregar btnQuitar">
+
+
+                            <p:graphicImage cache="false" class="imgMaterial" value="#{imageController.listMaterialImage}" height="100px">
+                                <f:param name="id" value="#{material.id}" />
+                            </p:graphicImage>
+                            <p:outputPanel>
+                                <h:panelGrid columns="2" cellpadding="2px" class="prestar">
+                                    <h:outputText value="Nombre" class="info-tag"/>
+                                    <h:outputText value="#{material.nombre}" class="info"/>
+                                    <h:outputText value="Descripción:" class="info-tag"/>
+                                    <h:outputText value="#{material.descripcion}" class="info"/>
+                                    <h:outputText value="Disponibles:" class="info-tag"/>
+                                    <h:outputText value="#{material.disponibles}" class="info"/>
+                                    <h:outputLabel value="No. Elementos:" class="info-tag prestar"/>
+                                    <h:outputText  value="${reservarMaterialController.contarMateriales(material)}" />
+                                    <h:outputLabel value="Cantidad:" class="info-tag prestar"/>
+                                    <p:inputText id="input1"  type="number" value="${reservarMaterialController.cantidad}">
+                                        <p:ajax listener="#{reservarMaterialController.changeMaterialCantidad(material)}" update="@(.out)"/>
+                                    </p:inputText>
+                                </h:panelGrid>
+                            </p:outputPanel>
+                            <p:commandButton  class="btn btn-sm  btn-outline-primary btnreservar prestar out" value="Reservar"
+                                              disabled="${!reservarMaterialController.hayDispobibles(material)}"
+                                              actionListener="#{reservarMaterialController.agregar}"
+                                              icon="fa fa-plus"
+                                              update="@(.prestar)" >
+                                <f:attribute name="material" value="#{material}"></f:attribute>
+                            </p:commandButton>
+                            <p:commandButton  id="btnQuitar" class="btn btn-sm btn-dark prestar" value="Quitar" 
+                                              disabled="${!reservarMaterialController.listaPrestamo.contains(material)}" 
+                                              actionListener="${reservarMaterialController.eliminar(material)}"
+                                              icon="fa fa-fw fa-times"
+                                              update="@(.prestar)"/>
+                        </h:panelGrid>
+                    </p:dataList>
+                    
+                    <p:dataList class="confirmarMateriales prestar" 
+                                value="${reservarMaterialController.listaPrestamoUnica}" var="material" type="definition"
+                                rendered="#{reservarMaterialController.estado and reservarMaterialController.listaPrestamoUnica.size()!=0}">
+                        <h:panelGrid class="panelGrid" columns="4" cellpadding = "15" >
+
+                            <p:graphicImage cache="false" class="imgMaterial" value="#{imageController.listMaterialImage}" height="75px">
+                                <f:param name="id" value="#{material.id}" />
+                            </p:graphicImage>
+                            <p:outputPanel>
+                                <h:panelGrid columns="2" cellpadding="2px">
+                                    <h:outputText value="Nombre" class="info-tag"/>
+                                    <h:outputText value="#{material.nombre}" class="info"/>
+
+                                    <h:outputText value="Disponibles:" class="info-tag"/>
+                                    <h:outputText value="#{material.disponibles}" class="info"/>
+                                    <h:outputLabel value="Cantidad: " class="info-tag prestar"/>
+                                    <h:outputLabel value="#{reservarMaterialController.contarMateriales(material)}"/>
+                                </h:panelGrid>
+                            </p:outputPanel>
+                            <p:commandButton id="btnQuitar" class="btn btn-sm btn-dark prestar" value="Quitar" 
+                                             actionListener="${reservarMaterialController.eliminar(material)}"
+                                             rendered="${!reservarMaterialController.exito}"
+                                             icon="fa fa-fw fa-times"
+                                             update="@(.prestar)">
+                                <f:actionListener binding="${reservarMaterialController.avisarPrestamoVacio()}" />
+                            </p:commandButton>
+                        </h:panelGrid>
+                    </p:dataList>
+                </h:form>
+            </div>
+        </ui:define>
+    </ui:composition> 
+</html>
